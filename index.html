@@ -7,6 +7,12 @@
     <style>
         * {margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui}
         body {max-width: 700px; margin: 0 auto; padding: 15px; background:#1a1a2e}
+        .online-tip {
+            color:#4ade80;
+            text-align:center;
+            margin-bottom:12px;
+            font-size:14px;
+        }
         .nick-box {margin-bottom:15px; display:flex; gap:8px}
         #nickname {flex:1; padding:10px; border:1px solid #2a4a7a; border-radius:6px; font-size:16px; background:#16213e; color:#fff}
         #setNick {padding:0 16px; background:#e94560; color:#fff; border:none; border-radius:6px; cursor:pointer}
@@ -21,6 +27,9 @@
     </style>
 </head>
 <body>
+    <!-- 新增在线人数展示区域 -->
+    <div class="online-tip">当前在线：<span id="onlineNum">0</span> 人</div>
+
     <div class="nick-box">
         <input type="text" id="nickname" placeholder="输入你的昵称">
         <button id="setNick">确定昵称</button>
@@ -39,6 +48,7 @@
         const setNickBtn = document.getElementById('setNick');
         const msgInput = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
+        const onlineNumEl = document.getElementById('onlineNum');
 
         // 读取本地保存昵称
         if(localStorage.getItem('chatNick')){
@@ -46,6 +56,7 @@
             nickInput.value = userName;
             loadMsg();
             updateUserActive();
+            getOnlineCount();
         }
 
         // 设置昵称
@@ -56,6 +67,7 @@
             localStorage.setItem('chatNick', userName);
             updateUserActive();
             loadMsg();
+            getOnlineCount();
         }
 
         // 获取时分字符串
@@ -77,6 +89,20 @@
                 })
             }catch(e){
                 console.log("用户状态上报失败",e)
+            }
+        }
+
+        // 【新增】获取在线人数（5分钟内活跃算在线）
+        async function getOnlineCount(){
+            try {
+                const res = await fetch(`${API_BASE}/user/list`);
+                const userList = await res.json();
+                const now = Date.now();
+                // 过滤5分钟内有操作的用户
+                const online = userList.filter(u => now - u.lastActive < 5 * 60 * 1000);
+                onlineNumEl.textContent = online.length;
+            } catch (err) {
+                onlineNumEl.textContent = "--";
             }
         }
 
@@ -116,6 +142,7 @@
                 })
                 msgInput.value = "";
                 loadMsg();
+                getOnlineCount(); // 发完刷新在线人数
             }catch(e){
                 alert("发送失败，接口未就绪");
             }
@@ -128,11 +155,12 @@
             if(e.key === 'Enter') sendMsg();
         })
 
-        // 每3秒自动刷新消息、更新在线
+        // 每3秒自动刷新消息+在线人数
         setInterval(()=>{
             if(userName){
                 updateUserActive();
                 loadMsg();
+                getOnlineCount();
             }
         },3000)
     </script>
