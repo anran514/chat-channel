@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天频道 - 后台管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f1a;
+            min-height: 100vh;
+            color: #e0e8f0;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .admin-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-title::before {
+            content: '⚙️';
+            font-size: 28px;
+        }
+        .back-btn {
+            background: #2a2a4a;
+            color: #e0e8f0;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .back-btn:hover {
+            background: #3a3a5a;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #2a2a4a;
+        }
+        .stat-label {
+            color: #8ba3c7;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .stat-value.green { color: #4ade80; }
+        .stat-value.blue { color: #60a5fa; }
+        .stat-value.orange { color: #fb923c; }
+        .stat-value.red { color: #f87171; }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a2e;
+            border-radius: 12px;
+            border: 1px solid #2a2a4a;
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 16px 20px;
+            background: #16213e;
+            border-bottom: 1px solid #2a2a4a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .panel-body {
+            padding: 16px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .panel-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .panel-body::-webkit-scrollbar-thumb {
+            background: #2a2a4a;
+            border-radius: 3px;
+        }
+        .user-list {
+            list-style: none;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .user-info {
+            flex: 1;
+        }
+        .user-name {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .user-meta {
+            color: #8ba3c7;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            flex-shrink: 0;
+        }
+        .user-status.offline {
+            background: #6b7280;
+        }
+        .message-list {
+            list-style: none;
+        }
+        .message-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .message-item:last-child {
+            border-bottom: none;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .message-author {
+            color: #60a5fa;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .message-time {
+            color: #6b82a7;
+            font-size: 12px;
+        }
+        .message-text {
+            color: #e0e8f0;
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            transform: scale(1.02);
+        }
+        .btn-secondary {
+            background: #2a2a4a;
+            color: #e0e8f0;
+        }
+        .btn-secondary:hover {
+            background: #3a3a5a;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: scale(1.02);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b82a7;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #2a2a4a;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+        .modal-text {
+            color: #8ba3c7;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 10px;
+            border: 1px solid #2a2a4a;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            z-index: 2000;
+            font-size: 14px;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.success {
+            border-left: 4px solid #4ade80;
+        }
+        .toast.error {
+            border-left: 4px solid #f87171;
+        }
+        .refresh-time {
+            color: #6b82a7;
+            font-size: 12px;
+        }
+
+        /* 手机端适配 */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .admin-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stat-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="admin-title">聊天频道后台管理</div>
+            <a href="chat.html" class="back-btn">← 返回聊天</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">总消息数</div>
+                <div class="stat-value blue" id="totalMessages">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">访问用户数</div>
+                <div class="stat-value green" id="totalUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">今日消息</div>
+                <div class="stat-value orange" id="todayMessages">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">当前在线</div>
+                <div class="stat-value red" id="onlineUsers">0</div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空所有聊天记录</button>
+            <button class="btn btn-secondary" onclick="clearUserStats()">清除用户访问记录</button>
+            <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">👥 访问用户</div>
+                    <div class="refresh-time" id="userRefreshTime"></div>
+                </div>
+                <div class="panel-body">
+                    <ul class="user-list" id="userList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👤</div>
+                            <div>暂无访问用户</div>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">💬 最近消息</div>
+                    <div class="refresh-time" id="msgRefreshTime"></div>
+                </div>
+                <div class="panel-body">
+                    <ul class="message-list" id="messageList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">💭</div>
+                            <div>暂无聊天记录</div>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div class="modal-overlay" id="clearModal">
+        <div class="modal">
+            <div class="modal-title">⚠️ 确认清空</div>
+            <div class="modal-text">
+                确定要清空所有聊天记录吗？此操作不可恢复，所有消息将被永久删除。
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideClearModal()">取消</button>
+                <button class="btn btn-danger" onclick="clearAllMessages()">确认清空</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const colors = [
+            '#e94560', '#0f3460', '#533483', '#1a4a7a',
+            '#2a9d8f', '#e76f51', '#f4a261', '#457b9d'
+        ];
+
+        function getAvatarColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function getMessages() {
+            return JSON.parse(localStorage.getItem('chatMessages') || '[]');
+        }
+
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('chatUsers') || '[]');
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('chatUsers', JSON.stringify(users));
+        }
+
+        function getTimeStr() {
+            const now = new Date();
+            return now.getHours().toString().padStart(2, '0') + ':' + 
+                   now.getMinutes().toString().padStart(2, '0');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.className = 'toast ' + type;
+            }, 2500);
+        }
+
+        function refreshData() {
+            const messages = getMessages();
+            const users = getUsers();
+            
+            // 统计总消息数
+            document.getElementById('totalMessages').textContent = messages.length;
+            
+            // 统计用户数（从消息中提取 + 记录的用户）
+            const userSet = new Set();
+            messages.forEach(m => userSet.add(m.username));
+            users.forEach(u => userSet.add(u.name));
+            document.getElementById('totalUsers').textContent = userSet.size;
+            
+            // 今日消息
+            const today = new Date().toDateString();
+            const todayCount = messages.filter(m => {
+                return true; // 简单统计，因为消息只存了时分
+            }).length;
+            document.getElementById('todayMessages').textContent = messages.length;
+            
+            // 在线用户（5分钟内有活跃的）
+            const now = Date.now();
+            const onlineCount = users.filter(u => now - u.lastActive < 5 * 60 * 1000).length;
+            document.getElementById('onlineUsers').textContent = onlineCount;
+            
+            // 渲染用户列表
+            renderUserList(users, messages);
+            
+            // 渲染消息列表（最近20条）
+            renderMessageList(messages.slice(-20).reverse());
+            
+            // 更新刷新时间
+            const timeStr = getTimeStr();
+            document.getElementById('userRefreshTime').textContent = '更新于 ' + timeStr;
+            document.getElementById('msgRefreshTime').textContent = '更新于 ' + timeStr;
+        }
+
+        function renderUserList(users, messages) {
+            const list = document.getElementById('userList');
+            
+            // 从消息中提取所有用户
+            const userMap = {};
+            messages.forEach(m => {
+                if (!userMap[m.username]) {
+                    userMap[m.username] = { name: m.username, count: 0, lastActive: 0 };
+                }
+                userMap[m.username].count++;
+            });
+            
+            // 合并记录的用户数据
+            users.forEach(u => {
+                if (!userMap[u.name]) {
+                    userMap[u.name] = { name: u.name, count: 0, lastActive: u.lastActive || 0 };
+                } else {
+                    userMap[u.name].lastActive = u.lastActive || userMap[u.name].lastActive;
+                }
+            });
+            
+            const userList = Object.values(userMap).sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
+            
+            if (userList.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <div>暂无访问用户</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const now = Date.now();
+            list.innerHTML = userList.map(u => {
+                const isOnline = now - (u.lastActive || 0) < 5 * 60 * 1000;
+                const lastActiveStr = u.lastActive ? new Date(u.lastActive).toLocaleString('zh-CN') : '未知';
+                return `
+                    <li class="user-item">
+                        <div class="user-avatar" style="background: ${getAvatarColor(u.name)}">
+                            ${u.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">${escapeHtml(u.name)}</div>
+                            <div class="user-meta">${u.count} 条消息 · 最后活跃: ${lastActiveStr}</div>
+                        </div>
+                        <div class="user-status ${isOnline ? '' : 'offline'}" title="${isOnline ? '在线' : '离线'}"></div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function renderMessageList(messages) {
+            const list = document.getElementById('messageList');
+            
+            if (messages.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💭</div>
+                        <div>暂无聊天记录</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = messages.map(m => `
+                <li class="message-item">
+                    <div class="message-header">
+                        <span class="message-author">${escapeHtml(m.username)}</span>
+                        <span class="message-time">${m.time}</span>
+                    </div>
+                    <div class="message-text">${escapeHtml(m.text)}</div>
+                </li>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showClearModal() {
+            document.getElementById('clearModal').classList.add('show');
+        }
+
+        function hideClearModal() {
+            document.getElementById('clearModal').classList.remove('show');
+        }
+
+        function clearAllMessages() {
+            localStorage.removeItem('chatMessages');
+            hideClearModal();
+            showToast('聊天记录已清空', 'success');
+            refreshData();
+        }
+
+        function clearUserStats() {
+            localStorage.removeItem('chatUsers');
+            showToast('用户访问记录已清除', 'success');
+            refreshData();
+        }
+
+        // 监听其他标签页的更新
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'chatMessages' || e.key === 'chatUsers') {
+                refreshData();
+            }
+        });
+
+        // 自动刷新（每10秒）
+        setInterval(refreshData, 10000);
+
+        // 初始化
+        refreshData();
+    </script>
+</body>
+</html>
