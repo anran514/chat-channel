@@ -1,23 +1,34 @@
-export default {
-  async onFetch(request, env) {
+export async function onRequest(context) {
+    const { request, env } = context;
     const db = env.DB;
-    // 获取所有消息
+    const headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    };
+    // 跨域预检放行
+    if (request.method === "OPTIONS") {
+        return new Response(null, { headers });
+    }
+    // 获取全部消息
     if (request.method === "GET") {
-      const { results } = await db.prepare("SELECT * FROM messages ORDER BY timestamp ASC").all();
-      return new Response(JSON.stringify(results), {
-        headers: { "content-type": "application/json" }
-      });
+        const res = await db.prepare("SELECT * FROM messages ORDER BY timestamp ASC").all();
+        return Response.json(res.results, { headers });
     }
     // 发送新消息
     if (request.method === "POST") {
-      const { username, text } = await request.json();
-      const now = Date.now();
-      await db.prepare(`
-        INSERT INTO messages (username, text, time, timestamp)
-        VALUES (?, ?, ?, ?)
-      `).bind(username, text, new Date(now).toLocaleString(), now).run();
-      return new Response(JSON.stringify({ok:true}));
+        const { username, text, time, timestamp } = await request.json();
+        await db.prepare(`
+            INSERT INTO messages (username, text, time, timestamp)
+            VALUES (?,?,?,?)
+        `).bind(username, text, time, timestamp).run();
+        return Response.json({ ok: true }, { headers });
     }
-    return new Response("方法错误", {status:405})
-  }
+    // 清空所有消息
+    if (request.method === "DELETE") {
+        await db.prepare("DELETE FROM messages").run();
+        return Response.json({ ok: true }, { headers });
+    }
+    return new Response("请求方式不支持", { status: 405, headers });
 }
