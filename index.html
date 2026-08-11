@@ -6,99 +6,135 @@
     <title>云端聊天室</title>
     <style>
         * {margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui}
-        body {max-width: 700px; margin: 0 auto; padding: 15px; background:#f5f5f5}
+        body {max-width: 700px; margin: 0 auto; padding: 15px; background:#1a1a2e}
         .nick-box {margin-bottom:15px; display:flex; gap:8px}
-        #nickname {flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:16px}
-        #setNick {padding:0 16px; background:#0071e3; color:#fff; border:none; border-radius:6px; cursor:pointer}
-        .chat-box {height: 65vh; overflow-y:auto; background:#fff; border-radius:8px; padding:15px; margin-bottom:15px}
+        #nickname {flex:1; padding:10px; border:1px solid #2a4a7a; border-radius:6px; font-size:16px; background:#16213e; color:#fff}
+        #setNick {padding:0 16px; background:#e94560; color:#fff; border:none; border-radius:6px; cursor:pointer}
+        .chat-box {height: 65vh; overflow-y:auto; background:#16213e; border-radius:8px; padding:15px; margin-bottom:15px}
         .msg-item {margin:8px 0; padding:10px; border-radius:7px; max-width:75%}
-        .self {background:#0071e3; color:#fff; margin-left:auto}
-        .other {background:#e9e9eb; color:#111}
+        .self {background:#e94560; color:#fff; margin-left:auto}
+        .other {background:#1f3a5f; color:#e0e8f0}
         .name {font-size:13px; opacity:0.8; margin-bottom:4px}
         .send-area {display:flex; gap:8px}
-        #msgInput {flex:1; padding:12px; border:1px solid #ddd; border-radius:6px; font-size:16px}
-        #sendBtn {padding:0 20px; background:#0071e3; color:#fff; border:none; border-radius:6px; cursor:pointer}
+        #msgInput {flex:1; padding:12px; border:1px solid #2a4a7a; border-radius:6px; font-size:16px; background:#16213e; color:#fff}
+        #sendBtn {padding:0 20px; background:#e94560; color:#fff; border:none; border-radius:6px; cursor:pointer}
     </style>
 </head>
 <body>
     <div class="nick-box">
         <input type="text" id="nickname" placeholder="输入你的昵称">
-        <button id="setNick">确定</button>
+        <button id="setNick">确定昵称</button>
     </div>
     <div class="chat-box" id="chatBox"></div>
     <div class="send-area">
-        <input type="text" id="msgInput" placeholder="输入消息">
+        <input type="text" id="msgInput" placeholder="输入消息，回车发送">
         <button id="sendBtn">发送</button>
     </div>
 
     <script>
         let userName = "";
+        const API_BASE = "/api";
         const chatBox = document.getElementById('chatBox');
         const nickInput = document.getElementById('nickname');
         const setNickBtn = document.getElementById('setNick');
         const msgInput = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
 
+        // 读取本地保存昵称
+        if(localStorage.getItem('chatNick')){
+            userName = localStorage.getItem('chatNick');
+            nickInput.value = userName;
+            loadMsg();
+            updateUserActive();
+        }
+
         // 设置昵称
         setNickBtn.onclick = () => {
-            userName = nickInput.value.trim();
-            if (!userName) return alert("请填写昵称");
+            const tempName = nickInput.value.trim();
+            if (!tempName) return alert("请填写昵称！");
+            userName = tempName;
             localStorage.setItem('chatNick', userName);
             updateUserActive();
             loadMsg();
         }
-        // 读取本地昵称
-        if(localStorage.getItem('chatNick')){
-            userName = localStorage.getItem('chatNick');
-            nickInput.value = userName;
+
+        // 获取时分字符串
+        function getTimeStr(){
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2,'0');
+            const m = String(now.getMinutes()).padStart(2,'0');
+            return `${h}:${m}`;
         }
 
-        // 更新在线活跃时间
+        // 更新在线状态
         async function updateUserActive(){
-            await fetch('/functions/api/user/list',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({name:userName})
-            })
+            if(!userName) return;
+            try{
+                await fetch(`${API_BASE}/user/list`,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({name:userName, lastActive:Date.now()})
+                })
+            }catch(e){
+                console.log("用户状态上报失败",e)
+            }
         }
 
-        // 加载消息列表
+        // 加载所有消息
         async function loadMsg(){
-            const res = await fetch('/functions/api/messages');
-            const list = await res.json();
-            chatBox.innerHTML = "";
-            list.forEach(item=>{
-                const div = document.createElement('div');
-                div.className = item.username === userName ? "msg-item self" : "msg-item other";
-                div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
-                chatBox.appendChild(div);
-            })
-            chatBox.scrollTop = chatBox.scrollHeight;
+            try{
+                const res = await fetch(`${API_BASE}/messages`);
+                const list = await res.json();
+                chatBox.innerHTML = "";
+                list.forEach(item=>{
+                    const div = document.createElement('div');
+                    div.className = item.username === userName ? "msg-item self" : "msg-item other";
+                    div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
+                    chatBox.appendChild(div);
+                })
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }catch(e){
+                chatBox.innerHTML = "<div style='color:#aaa'>加载消息失败，请等待接口部署完成</div>";
+            }
         }
 
         // 发送消息
         async function sendMsg(){
-            if(!userName) return alert("先设置昵称");
+            if(!userName) return alert("先输入并确定昵称！");
             const text = msgInput.value.trim();
             if(!text) return;
-            await fetch('/functions/api/messages',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({username:userName, text})
-            })
-            msgInput.value = "";
-            loadMsg();
+            try{
+                await fetch(`${API_BASE}/messages`,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                        username:userName,
+                        text:text,
+                        time:getTimeStr(),
+                        timestamp:Date.now()
+                    })
+                })
+                msgInput.value = "";
+                loadMsg();
+            }catch(e){
+                alert("发送失败，接口未就绪");
+            }
         }
-        sendBtn.onclick = sendMsg;
-        msgInput.onkeydown = e=>e.key==='Enter'&&sendMsg();
 
-        // 自动刷新消息
+        // 点击发送按钮
+        sendBtn.onclick = sendMsg;
+        // 回车发送
+        msgInput.addEventListener('keydown', (e)=>{
+            if(e.key === 'Enter') sendMsg();
+        })
+
+        // 每3秒自动刷新消息、更新在线
         setInterval(()=>{
             if(userName){
                 updateUserActive();
                 loadMsg();
             }
-        }, 3000)
+        },3000)
     </script>
 </body>
 </html>
