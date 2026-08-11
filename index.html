@@ -225,7 +225,6 @@
         .emoji-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-
         /* 手机端适配 */
         @media (max-width: 600px) {
             body {
@@ -313,7 +312,6 @@
                 padding: 0 14px 8px;
             }
         }
-
         /* 超小屏幕 */
         @media (max-width: 360px) {
             .user-setting span {
@@ -340,13 +338,10 @@
                 <input type="text" id="username" value="游客" maxlength="10">
             </div>
         </div>
-
         <div class="chat-messages" id="messages">
             <div class="system-message">欢迎来到闲聊频道！</div>
         </div>
-
         <div class="typing-indicator" id="typing"></div>
-
         <div class="chat-input-area">
             <div class="emoji-bar">
                 <button class="emoji-btn" onclick="addEmoji('😀')">😀</button>
@@ -364,42 +359,36 @@
             </div>
         </div>
     </div>
-
     <script>
         const colors = [
             '#e94560', '#0f3460', '#533483', '#1a4a7a',
             '#2a9d8f', '#e76f51', '#f4a261', '#457b9d'
         ];
-
         let messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
         let username = localStorage.getItem('chatUsername') || '游客';
-
         document.getElementById('username').value = username;
 
-        // 页面加载时记录用户在线
-        (function recordUserActive() {
+        // 记录用户在线
+        function recordUserActive() {
             let users = JSON.parse(localStorage.getItem('chatUsers') || '[]');
-            const existingUser = users.find(u => u.name === username);
-            if (existingUser) {
-                existingUser.lastActive = Date.now();
-            } else {
-                users.push({ name: username, lastActive: Date.now() });
+            const currentName = document.getElementById('username').value.trim() || '游客';
+            const findUser = users.find(item => item.name === currentName);
+            if(findUser){
+                findUser.lastActive = Date.now();
+            }else{
+                users.push({name: currentName, lastActive: Date.now()});
             }
             localStorage.setItem('chatUsers', JSON.stringify(users));
-        })();
+        }
 
-        // 每30秒更新一次在线状态
-        setInterval(() => {
-            const currentUser = document.getElementById('username').value.trim() || '游客';
-            let users = JSON.parse(localStorage.getItem('chatUsers') || '[]');
-            const existingUser = users.find(u => u.name === currentUser);
-            if (existingUser) {
-                existingUser.lastActive = Date.now();
-            } else {
-                users.push({ name: currentUser, lastActive: Date.now() });
-            }
-            localStorage.setItem('chatUsers', JSON.stringify(users));
-        }, 30000);
+        recordUserActive();
+        // 30秒更新在线状态
+        setInterval(recordUserActive, 30000);
+        // 自动刷新消息，实现同浏览器多标签同步
+        setInterval(()=>{
+            messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+            renderMessages();
+        }, 1500);
 
         function getAvatarColor(name) {
             let hash = 0;
@@ -437,7 +426,6 @@
                 `;
                 container.appendChild(messageEl);
             });
-            
             container.scrollTop = container.scrollHeight;
         }
 
@@ -451,30 +439,21 @@
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             const user = document.getElementById('username').value.trim() || '游客';
-            
             if (!text) return;
-            
+
             username = user;
             localStorage.setItem('chatUsername', username);
-            
-            // 记录用户访问信息
-            let users = JSON.parse(localStorage.getItem('chatUsers') || '[]');
-            const existingUser = users.find(u => u.name === user);
-            if (existingUser) {
-                existingUser.lastActive = Date.now();
-            } else {
-                users.push({ name: user, lastActive: Date.now() });
-            }
-            localStorage.setItem('chatUsers', JSON.stringify(users));
-            
+            recordUserActive();
+
+            // 存入本地存储
             messages.push({
                 username: user,
                 text: text,
-                time: getTime()
+                time: getTime(),
+                timestamp: Date.now()
             });
-            
             localStorage.setItem('chatMessages', JSON.stringify(messages));
-            
+
             input.value = '';
             input.style.height = 'auto';
             renderMessages();
@@ -486,29 +465,34 @@
             input.focus();
         }
 
+        // 回车发送
         document.getElementById('messageInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
-
+        // 输入框自适应高度
         document.getElementById('messageInput').addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
-
+        // 修改昵称立刻更新
         document.getElementById('username').addEventListener('change', function() {
             username = this.value.trim() || '游客';
             localStorage.setItem('chatUsername', username);
+            recordUserActive();
             renderMessages();
         });
 
-        // 监听其他标签页的消息更新
+        // 监听本地存储变化，同浏览器标签实时同步
         window.addEventListener('storage', (e) => {
             if (e.key === 'chatMessages') {
                 messages = JSON.parse(e.newValue || '[]');
                 renderMessages();
+            }
+            if(e.key === 'chatUsers'){
+                recordUserActive();
             }
         });
 
