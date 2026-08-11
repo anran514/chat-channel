@@ -310,7 +310,6 @@
             color: #6b82a7;
             font-size: 12px;
         }
-
         /* 手机端适配 */
         @media (max-width: 768px) {
             .main-content {
@@ -334,9 +333,8 @@
     <div class="admin-container">
         <div class="admin-header">
             <div class="admin-title">聊天频道后台管理</div>
-            <a href="chat.html" class="back-btn">← 返回聊天</a>
+            <a href="index.html" class="back-btn">← 返回聊天</a>
         </div>
-
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">总消息数</div>
@@ -355,13 +353,11 @@
                 <div class="stat-value red" id="onlineUsers">0</div>
             </div>
         </div>
-
         <div class="action-bar">
             <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空所有聊天记录</button>
             <button class="btn btn-secondary" onclick="clearUserStats()">清除用户访问记录</button>
             <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
         </div>
-
         <div class="main-content">
             <div class="panel">
                 <div class="panel-header">
@@ -377,7 +373,6 @@
                     </ul>
                 </div>
             </div>
-
             <div class="panel">
                 <div class="panel-header">
                     <div class="panel-title">💬 最近消息</div>
@@ -394,7 +389,6 @@
             </div>
         </div>
     </div>
-
     <!-- 确认弹窗 -->
     <div class="modal-overlay" id="clearModal">
         <div class="modal">
@@ -408,16 +402,13 @@
             </div>
         </div>
     </div>
-
     <!-- 提示框 -->
     <div class="toast" id="toast"></div>
-
     <script>
         const colors = [
             '#e94560', '#0f3460', '#533483', '#1a4a7a',
             '#2a9d8f', '#e76f51', '#f4a261', '#457b9d'
         ];
-
         function getAvatarColor(name) {
             let hash = 0;
             for (let i = 0; i < name.length; i++) {
@@ -425,25 +416,20 @@
             }
             return colors[Math.abs(hash) % colors.length];
         }
-
         function getMessages() {
             return JSON.parse(localStorage.getItem('chatMessages') || '[]');
         }
-
         function getUsers() {
             return JSON.parse(localStorage.getItem('chatUsers') || '[]');
         }
-
         function saveUsers(users) {
             localStorage.setItem('chatUsers', JSON.stringify(users));
         }
-
         function getTimeStr() {
             const now = new Date();
             return now.getHours().toString().padStart(2, '0') + ':' + 
                    now.getMinutes().toString().padStart(2, '0');
         }
-
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -452,48 +438,42 @@
                 toast.className = 'toast ' + type;
             }, 2500);
         }
-
         function refreshData() {
             const messages = getMessages();
             const users = getUsers();
             
-            // 统计总消息数
+            // 总消息
             document.getElementById('totalMessages').textContent = messages.length;
             
-            // 统计用户数（从消息中提取 + 记录的用户）
+            // 全部用户
             const userSet = new Set();
             messages.forEach(m => userSet.add(m.username));
             users.forEach(u => userSet.add(u.name));
             document.getElementById('totalUsers').textContent = userSet.size;
             
-            // 今日消息
-            const today = new Date().toDateString();
-            const todayCount = messages.filter(m => {
-                return true; // 简单统计，因为消息只存了时分
-            }).length;
-            document.getElementById('todayMessages').textContent = messages.length;
+            // 修复今日消息统计（根据时间戳判断）
+            const todayDate = new Date().toDateString();
+            const todayCount = messages.filter(m=>{
+                if(!m.timestamp) return false;
+                const msgDate = new Date(m.timestamp).toDateString();
+                return msgDate === todayDate;
+            })
+            document.getElementById('todayMessages').textContent = todayCount.length;
             
-            // 在线用户（5分钟内有活跃的）
+            // 在线用户 5分钟内活跃
             const now = Date.now();
             const onlineCount = users.filter(u => now - u.lastActive < 5 * 60 * 1000).length;
             document.getElementById('onlineUsers').textContent = onlineCount;
             
-            // 渲染用户列表
             renderUserList(users, messages);
-            
-            // 渲染消息列表（最近20条）
             renderMessageList(messages.slice(-20).reverse());
             
-            // 更新刷新时间
             const timeStr = getTimeStr();
             document.getElementById('userRefreshTime').textContent = '更新于 ' + timeStr;
             document.getElementById('msgRefreshTime').textContent = '更新于 ' + timeStr;
         }
-
         function renderUserList(users, messages) {
             const list = document.getElementById('userList');
-            
-            // 从消息中提取所有用户
             const userMap = {};
             messages.forEach(m => {
                 if (!userMap[m.username]) {
@@ -501,8 +481,6 @@
                 }
                 userMap[m.username].count++;
             });
-            
-            // 合并记录的用户数据
             users.forEach(u => {
                 if (!userMap[u.name]) {
                     userMap[u.name] = { name: u.name, count: 0, lastActive: u.lastActive || 0 };
@@ -510,9 +488,7 @@
                     userMap[u.name].lastActive = u.lastActive || userMap[u.name].lastActive;
                 }
             });
-            
             const userList = Object.values(userMap).sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
-            
             if (userList.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state">
@@ -522,7 +498,6 @@
                 `;
                 return;
             }
-            
             const now = Date.now();
             list.innerHTML = userList.map(u => {
                 const isOnline = now - (u.lastActive || 0) < 5 * 60 * 1000;
@@ -541,10 +516,8 @@
                 `;
             }).join('');
         }
-
         function renderMessageList(messages) {
             const list = document.getElementById('messageList');
-            
             if (messages.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state">
@@ -554,7 +527,6 @@
                 `;
                 return;
             }
-            
             list.innerHTML = messages.map(m => `
                 <li class="message-item">
                     <div class="message-header">
@@ -565,45 +537,36 @@
                 </li>
             `).join('');
         }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
         function showClearModal() {
             document.getElementById('clearModal').classList.add('show');
         }
-
         function hideClearModal() {
             document.getElementById('clearModal').classList.remove('show');
         }
-
         function clearAllMessages() {
             localStorage.removeItem('chatMessages');
             hideClearModal();
             showToast('聊天记录已清空', 'success');
             refreshData();
         }
-
         function clearUserStats() {
             localStorage.removeItem('chatUsers');
             showToast('用户访问记录已清除', 'success');
             refreshData();
         }
-
-        // 监听其他标签页的更新
+        // 监听本地存储变化，同浏览器标签实时同步
         window.addEventListener('storage', (e) => {
             if (e.key === 'chatMessages' || e.key === 'chatUsers') {
                 refreshData();
             }
         });
-
-        // 自动刷新（每10秒）
-        setInterval(refreshData, 10000);
-
-        // 初始化
+        // 缩短自动刷新间隔，1.5秒更新一次
+        setInterval(refreshData, 1500);
         refreshData();
     </script>
 </body>
