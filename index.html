@@ -3,500 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聊天频道</title>
+    <title>云端聊天室</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .chat-container {
-            width: 100%;
-            max-width: 800px;
-            height: 90vh;
-            background: #16213e;
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-        .chat-header {
-            background: #0f3460;
-            padding: 20px 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #1a4a7a;
-        }
-        .channel-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .channel-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-        .channel-name {
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .channel-members {
-            color: #8ba3c7;
-            font-size: 13px;
-        }
-        .user-setting {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .user-setting input {
-            background: #1a1a2e;
-            border: 1px solid #2a4a7a;
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            width: 120px;
-        }
-        .user-setting input:focus {
-            outline: none;
-            border-color: #e94560;
-        }
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-        .chat-messages::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #2a4a7a;
-            border-radius: 3px;
-        }
-        .message {
-            display: flex;
-            gap: 12px;
-            max-width: 70%;
-        }
-        .message.self {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #fff;
-            flex-shrink: 0;
-            font-size: 16px;
-        }
-        .message-content {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .message.self .message-content {
-            align-items: flex-end;
-        }
-        .message-meta {
-            display: flex;
-            gap: 8px;
-            font-size: 12px;
-            color: #8ba3c7;
-        }
-        .message-bubble {
-            background: #1f3a5f;
-            padding: 12px 16px;
-            border-radius: 12px;
-            color: #e0e8f0;
-            line-height: 1.5;
-            word-break: break-word;
-        }
-        .message.self .message-bubble {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
-            color: #fff;
-        }
-        .message-time {
-            font-size: 11px;
-            color: #6b82a7;
-        }
-        .system-message {
-            align-self: center;
-            background: rgba(255, 255, 255, 0.05);
-            color: #8ba3c7;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-        }
-        .chat-input-area {
-            padding: 20px 30px;
-            background: #0f3460;
-            border-top: 1px solid #1a4a7a;
-        }
-        .input-wrapper {
-            display: flex;
-            gap: 12px;
-        }
-        .chat-input {
-            flex: 1;
-            background: #1a1a2e;
-            border: 1px solid #2a4a7a;
-            color: #fff;
-            padding: 14px 18px;
-            border-radius: 12px;
-            font-size: 15px;
-            resize: none;
-            font-family: inherit;
-        }
-        .chat-input:focus {
-            outline: none;
-            border-color: #e94560;
-        }
-        .send-btn {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
-            color: #fff;
-            border: none;
-            padding: 0 28px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .send-btn:hover {
-            transform: scale(1.05);
-        }
-        .send-btn:active {
-            transform: scale(0.98);
-        }
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .typing-indicator {
-            color: #8ba3c7;
-            font-size: 13px;
-            padding: 0 30px 10px;
-            height: 20px;
-        }
-        .emoji-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .emoji-btn {
-            background: transparent;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
-        .emoji-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        /* 手机端适配 */
-        @media (max-width: 600px) {
-            body {
-                align-items: stretch;
-                background: #16213e;
-            }
-            .chat-container {
-                max-width: 100%;
-                height: 100vh;
-                border-radius: 0;
-                box-shadow: none;
-            }
-            .chat-header {
-                padding: 12px 16px;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            .channel-icon {
-                width: 36px;
-                height: 36px;
-                font-size: 18px;
-            }
-            .channel-name {
-                font-size: 16px;
-            }
-            .channel-members {
-                font-size: 12px;
-            }
-            .user-setting {
-                width: 100%;
-                justify-content: flex-end;
-            }
-            .user-setting input {
-                width: 100px;
-                padding: 6px 10px;
-                font-size: 13px;
-            }
-            .chat-messages {
-                padding: 12px 14px;
-                gap: 12px;
-            }
-            .message {
-                max-width: 85%;
-                gap: 8px;
-            }
-            .avatar {
-                width: 34px;
-                height: 34px;
-                font-size: 14px;
-            }
-            .message-bubble {
-                padding: 10px 14px;
-                font-size: 15px;
-            }
-            .message-meta {
-                font-size: 11px;
-            }
-            .chat-input-area {
-                padding: 12px 14px;
-                padding-bottom: calc(12px + env(safe-area-inset-bottom));
-            }
-            .emoji-bar {
-                gap: 4px;
-                margin-bottom: 8px;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            .emoji-btn {
-                font-size: 22px;
-                padding: 6px 8px;
-                flex-shrink: 0;
-            }
-            .input-wrapper {
-                gap: 8px;
-            }
-            .chat-input {
-                padding: 12px 14px;
-                font-size: 16px;
-            }
-            .send-btn {
-                padding: 0 20px;
-                font-size: 15px;
-            }
-            .typing-indicator {
-                padding: 0 14px 8px;
-            }
-        }
-        /* 超小屏幕 */
-        @media (max-width: 360px) {
-            .user-setting span {
-                display: none;
-            }
-            .message {
-                max-width: 88%;
-            }
-        }
+        * {margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui}
+        body {max-width: 700px; margin: 0 auto; padding: 15px; background:#f5f5f5}
+        .nick-box {margin-bottom:15px; display:flex; gap:8px}
+        #nickname {flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:16px}
+        #setNick {padding:0 16px; background:#0071e3; color:#fff; border:none; border-radius:6px; cursor:pointer}
+        .chat-box {height: 65vh; overflow-y:auto; background:#fff; border-radius:8px; padding:15px; margin-bottom:15px}
+        .msg-item {margin:8px 0; padding:10px; border-radius:7px; max-width:75%}
+        .self {background:#0071e3; color:#fff; margin-left:auto}
+        .other {background:#e9e9eb; color:#111}
+        .name {font-size:13px; opacity:0.8; margin-bottom:4px}
+        .send-area {display:flex; gap:8px}
+        #msgInput {flex:1; padding:12px; border:1px solid #ddd; border-radius:6px; font-size:16px}
+        #sendBtn {padding:0 20px; background:#0071e3; color:#fff; border:none; border-radius:6px; cursor:pointer}
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <div class="channel-info">
-                <div class="channel-icon">💬</div>
-                <div>
-                    <div class="channel-name">闲聊频道</div>
-                    <div class="channel-members" id="memberCount">1 人在线</div>
-                </div>
-            </div>
-            <div class="user-setting">
-                <span style="color: #8ba3c7; font-size: 13px;">昵称:</span>
-                <input type="text" id="username" value="游客" maxlength="10">
-            </div>
-        </div>
-        <div class="chat-messages" id="messages">
-            <div class="system-message">欢迎来到闲聊频道！</div>
-        </div>
-        <div class="typing-indicator" id="typing"></div>
-        <div class="chat-input-area">
-            <div class="emoji-bar">
-                <button class="emoji-btn" onclick="addEmoji('😀')">😀</button>
-                <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
-                <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
-                <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
-                <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-                <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
-                <button class="emoji-btn" onclick="addEmoji('😎')">😎</button>
-                <button class="emoji-btn" onclick="addEmoji('🤔')">🤔</button>
-            </div>
-            <div class="input-wrapper">
-                <textarea class="chat-input" id="messageInput" placeholder="输入消息..." rows="1" maxlength="500"></textarea>
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
-            </div>
-        </div>
+    <div class="nick-box">
+        <input type="text" id="nickname" placeholder="输入你的昵称">
+        <button id="setNick">确定</button>
     </div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="send-area">
+        <input type="text" id="msgInput" placeholder="输入消息">
+        <button id="sendBtn">发送</button>
+    </div>
+
     <script>
-        const colors = [
-            '#e94560', '#0f3460', '#533483', '#1a4a7a',
-            '#2a9d8f', '#e76f51', '#f4a261', '#457b9d'
-        ];
-        let messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-        let username = localStorage.getItem('chatUsername') || '游客';
-        document.getElementById('username').value = username;
+        let userName = "";
+        const chatBox = document.getElementById('chatBox');
+        const nickInput = document.getElementById('nickname');
+        const setNickBtn = document.getElementById('setNick');
+        const msgInput = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
 
-        // 记录用户在线
-        function recordUserActive() {
-            let users = JSON.parse(localStorage.getItem('chatUsers') || '[]');
-            const currentName = document.getElementById('username').value.trim() || '游客';
-            const findUser = users.find(item => item.name === currentName);
-            if(findUser){
-                findUser.lastActive = Date.now();
-            }else{
-                users.push({name: currentName, lastActive: Date.now()});
-            }
-            localStorage.setItem('chatUsers', JSON.stringify(users));
+        // 设置昵称
+        setNickBtn.onclick = () => {
+            userName = nickInput.value.trim();
+            if (!userName) return alert("请填写昵称");
+            localStorage.setItem('chatNick', userName);
+            updateUserActive();
+            loadMsg();
+        }
+        // 读取本地昵称
+        if(localStorage.getItem('chatNick')){
+            userName = localStorage.getItem('chatNick');
+            nickInput.value = userName;
         }
 
-        recordUserActive();
-        // 30秒更新在线状态
-        setInterval(recordUserActive, 30000);
-        // 自动刷新消息，实现同浏览器多标签同步
+        // 更新在线活跃时间
+        async function updateUserActive(){
+            await fetch('/functions/api/user/list',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({name:userName})
+            })
+        }
+
+        // 加载消息列表
+        async function loadMsg(){
+            const res = await fetch('/functions/api/messages');
+            const list = await res.json();
+            chatBox.innerHTML = "";
+            list.forEach(item=>{
+                const div = document.createElement('div');
+                div.className = item.username === userName ? "msg-item self" : "msg-item other";
+                div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
+                chatBox.appendChild(div);
+            })
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 发送消息
+        async function sendMsg(){
+            if(!userName) return alert("先设置昵称");
+            const text = msgInput.value.trim();
+            if(!text) return;
+            await fetch('/functions/api/messages',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({username:userName, text})
+            })
+            msgInput.value = "";
+            loadMsg();
+        }
+        sendBtn.onclick = sendMsg;
+        msgInput.onkeydown = e=>e.key==='Enter'&&sendMsg();
+
+        // 自动刷新消息
         setInterval(()=>{
-            messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-            renderMessages();
-        }, 1500);
-
-        function getAvatarColor(name) {
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            if(userName){
+                updateUserActive();
+                loadMsg();
             }
-            return colors[Math.abs(hash) % colors.length];
-        }
-
-        function getTime() {
-            const now = new Date();
-            return now.getHours().toString().padStart(2, '0') + ':' + 
-                   now.getMinutes().toString().padStart(2, '0');
-        }
-
-        function renderMessages() {
-            const container = document.getElementById('messages');
-            container.innerHTML = '<div class="system-message">欢迎来到闲聊频道！</div>';
-            
-            messages.forEach(msg => {
-                const isSelf = msg.username === document.getElementById('username').value;
-                const messageEl = document.createElement('div');
-                messageEl.className = 'message' + (isSelf ? ' self' : '');
-                messageEl.innerHTML = `
-                    <div class="avatar" style="background: ${getAvatarColor(msg.username)}">
-                        ${msg.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="message-content">
-                        <div class="message-meta">
-                            <span>${msg.username}</span>
-                            <span class="message-time">${msg.time}</span>
-                        </div>
-                        <div class="message-bubble">${escapeHtml(msg.text)}</div>
-                    </div>
-                `;
-                container.appendChild(messageEl);
-            });
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-            const user = document.getElementById('username').value.trim() || '游客';
-            if (!text) return;
-
-            username = user;
-            localStorage.setItem('chatUsername', username);
-            recordUserActive();
-
-            // 存入本地存储
-            messages.push({
-                username: user,
-                text: text,
-                time: getTime(),
-                timestamp: Date.now()
-            });
-            localStorage.setItem('chatMessages', JSON.stringify(messages));
-
-            input.value = '';
-            input.style.height = 'auto';
-            renderMessages();
-        }
-
-        function addEmoji(emoji) {
-            const input = document.getElementById('messageInput');
-            input.value += emoji;
-            input.focus();
-        }
-
-        // 回车发送
-        document.getElementById('messageInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-        // 输入框自适应高度
-        document.getElementById('messageInput').addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
-        // 修改昵称立刻更新
-        document.getElementById('username').addEventListener('change', function() {
-            username = this.value.trim() || '游客';
-            localStorage.setItem('chatUsername', username);
-            recordUserActive();
-            renderMessages();
-        });
-
-        // 监听本地存储变化，同浏览器标签实时同步
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'chatMessages') {
-                messages = JSON.parse(e.newValue || '[]');
-                renderMessages();
-            }
-            if(e.key === 'chatUsers'){
-                recordUserActive();
-            }
-        });
-
-        renderMessages();
+        }, 3000)
     </script>
 </body>
 </html>
