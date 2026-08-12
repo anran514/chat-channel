@@ -19,7 +19,7 @@ export async function onRequest(context) {
         await db.prepare(`
             INSERT INTO messages (username, text, time, timestamp)
             VALUES (?,?,?,?)
-        `).bind(username, text, timestamp).run();
+        `).bind(username, text, time, timestamp).run();
         return Response.json({ ok: true }, { headers });
     }
     if (request.method === "DELETE") {
