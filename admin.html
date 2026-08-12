@@ -23,7 +23,6 @@
 
     <script>
         const API_BASE = "/api";
-        // 读取消息
         async function getRecord(){
             try{
                 const res = await fetch(`${API_BASE}/messages`);
@@ -32,8 +31,8 @@
                 data.forEach(item=>{
                     html += `
                     <div class="msg-item">
-                        <div class="name">${item.username}</div>
-                        <div class="text">${item.text}</div>
+                        <div class="name">${escapeHtml(item.username)}</div>
+                        <div class="text">${escapeHtml(item.text)}</div>
                         <div class="time">${item.time} ${new Date(item.timestamp).toLocaleString()}</div>
                     </div>
                     `
@@ -43,11 +42,15 @@
                 document.getElementById('msgList').innerHTML = "<div style='color:#999'>接口加载失败</div>";
             }
         }
-        // 清空消息
         async function clearAllMsg(){
             if(!confirm("确定清空全部消息？不可恢复")) return;
             await fetch(`${API_BASE}/messages`,{method:"DELETE"});
             getRecord();
+        }
+        function escapeHtml(text){
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
         }
         getRecord();
         setInterval(getRecord,4000)
