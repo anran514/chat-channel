@@ -10,10 +10,10 @@
         h2 {margin-bottom:20px;color:#fff}
         .panel {background:#1a1a2e;padding:16px;border-radius:10px;border:1px solid #2a2a4a;margin-bottom:20px}
         .msg-item {padding:10px 0;border-bottom:1px solid #2a2a4a}
-        .name {color:#60a5fa;font-weight:bold}
+        .name {color:#63a8ff;font-weight:bold}
         .text {margin:4px 0}
-        .time {font-size:12px;color:#8ba3c7}
-        .btn {padding:8px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;margin-bottom:15px;cursor:pointer}
+        .time {font-size:12px;color:#99aacc}
+        .btn {padding:8px 14px;background:#dc3545;color:#fff;border:none;border-radius:6px;margin-bottom:15px;cursor:pointer}
     </style>
 </head>
 <body>
@@ -23,12 +23,17 @@
 
     <script>
         const API_BASE = "/api";
-        async function getRecord(){
+        function escapeHtml(str) {
+            let div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        async function loadRecords(){
             try{
                 const res = await fetch(`${API_BASE}/messages`);
-                const data = await res.json();
-                let html = "";
-                data.forEach(item=>{
+                const list = await res.json();
+                let html = '';
+                list.forEach(item=>{
                     html += `
                     <div class="msg-item">
                         <div class="name">${escapeHtml(item.username)}</div>
@@ -37,23 +42,18 @@
                     </div>
                     `
                 })
-                document.getElementById('msgList').innerHTML = html || "<div>暂无消息</div>";
-            }catch(e){
-                document.getElementById('msgList').innerHTML = "<div style='color:#999'>接口加载失败</div>";
+                document.getElementById('msgList').innerHTML = html || '<div>暂无聊天记录</div>';
+            }catch(err){
+                document.getElementById('msgList').innerHTML = '<div style="color:#aaa">加载失败</div>';
             }
         }
         async function clearAllMsg(){
-            if(!confirm("确定清空全部消息？不可恢复")) return;
-            await fetch(`${API_BASE}/messages`,{method:"DELETE"});
-            getRecord();
+            if(!confirm('确定清空全部消息，无法恢复？'))return;
+            await fetch(`${API_BASE}/messages`,{method:'DELETE'});
+            loadRecords();
         }
-        function escapeHtml(text){
-            const d = document.createElement('div');
-            d.textContent = text;
-            return d.innerHTML;
-        }
-        getRecord();
-        setInterval(getRecord,4000)
+        loadRecords();
+        setInterval(loadRecords, 4000);
     </script>
 </body>
 </html>
