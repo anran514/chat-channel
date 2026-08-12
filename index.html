@@ -16,7 +16,14 @@
         .nick-box {margin-bottom:15px; display:flex; gap:8px}
         #nickname {flex:1; padding:10px; border:1px solid #2a4a7a; border-radius:6px; font-size:16px; background:#16213e; color:#fff}
         #setNick {padding:0 16px; background:#e94560; color:#fff; border:none; border-radius:6px; cursor:pointer}
-        .chat-box {height: 65vh; overflow-y:auto; background:#16213e; border-radius:8px; padding:15px; margin-bottom:15px}
+        .chat-box {
+            height: 65vh;
+            overflow-y:auto;
+            background:#16213e;
+            border-radius:8px;
+            padding:15px;
+            margin-bottom:15px
+        }
         .msg-item {margin:8px 0; padding:10px; border-radius:7px; max-width:75%}
         .self {background:#e94560; color:#fff; margin-left:auto}
         .other {background:#1f3a5f; color:#e0e8f0}
@@ -49,10 +56,23 @@
         const sendBtn = document.getElementById('sendBtn');
         const onlineNumEl = document.getElementById('onlineNum');
 
+        // 缓存已加载消息的最大时间戳，用来区分新消息
+        let maxMsgTs = 0;
+        // 是否在底部（仅新消息到来时判断是否自动下滑）
+        let isScrollBottom = true;
+
+        // 滚动监听：判断是否在看历史
+        chatBox.addEventListener('scroll', () => {
+            const scrollTop = chatBox.scrollTop;
+            const height = chatBox.clientHeight;
+            const totalHeight = chatBox.scrollHeight;
+            isScrollBottom = (totalHeight - scrollTop - height) < 80;
+        });
+
         if(localStorage.getItem('chatNick')){
             userName = localStorage.getItem('chatNick');
             nickInput.value = userName;
-            loadMsg();
+            loadMsgInit();
             updateUserActive();
             getOnlineCount();
         }
@@ -63,7 +83,7 @@
             userName = tempName;
             localStorage.setItem('chatNick', userName);
             updateUserActive();
-            loadMsg();
+            loadMsgInit();
             getOnlineCount();
         }
 
@@ -87,13 +107,12 @@
             }
         }
 
-        // 核心修复：去重统计在线人数
+        // 在线人数单独更新，完全不碰聊天DOM
         async function getOnlineCount(){
             try {
                 const res = await fetch(`${API_BASE}/user/list`);
                 const allRecords = await res.json();
                 const now = Date.now();
-                // 存储每个用户最新活跃时间
                 const userMap = new Map();
                 allRecords.forEach(item => {
                     const old = userMap.get(item.name) || 0;
@@ -101,7 +120,6 @@
                         userMap.set(item.name, item.lastActive);
                     }
                 });
-                // 筛选5分钟内活跃的唯一用户
                 let onlineCount = 0;
                 userMap.forEach(time => {
                     if(now - time < 5 * 60 * 1000){
@@ -114,16 +132,16 @@
             }
         }
 
-        async function loadMsg(){
+        // 首次加载：渲染全部历史消息
+        async function loadMsgInit(){
             try{
                 const res = await fetch(`${API_BASE}/messages`);
                 const list = await res.json();
                 chatBox.innerHTML = "";
+                maxMsgTs = 0;
                 list.forEach(item=>{
-                    const div = document.createElement('div');
-                    div.className = item.username === userName ? "msg-item self" : "msg-item other";
-                    div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
-                    chatBox.appendChild(div);
+                    renderSingleMsg(item);
+                    if(item.timestamp > maxMsgTs) maxMsgTs = item.timestamp;
                 })
                 chatBox.scrollTop = chatBox.scrollHeight;
             }catch(e){
@@ -131,6 +149,38 @@
             }
         }
 
+        // 增量刷新：只加载比maxMsgTs新的消息，不删除原有内容
+        async function loadMsgUpdate(){
+            try{
+                const res = await fetch(`${API_BASE}/messages`);
+                const allList = await res.json();
+                // 筛选新增消息
+                const newMsgs = allList.filter(m => m.timestamp > maxMsgTs);
+                if(newMsgs.length === 0) return;
+
+                // 逐条追加，不清空聊天框
+                newMsgs.forEach(item=>{
+                    renderSingleMsg(item);
+                    if(item.timestamp > maxMsgTs) maxMsgTs = item.timestamp;
+                })
+                // 只有停在底部才自动下滑
+                if(isScrollBottom){
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }catch(e){
+                console.log("增量刷新失败",e);
+            }
+        }
+
+        // 渲染单条消息（纯追加，不覆盖原有DOM）
+        function renderSingleMsg(item){
+            const div = document.createElement('div');
+            div.className = item.username === userName ? "msg-item self" : "msg-item other";
+            div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
+            chatBox.appendChild(div);
+        }
+
+        // 发送消息
         async function sendMsg(){
             if(!userName) return alert("先输入并确定昵称！");
             const text = msgInput.value.trim();
@@ -147,7 +197,9 @@
                     })
                 })
                 msgInput.value = "";
-                loadMsg();
+                // 发完立刻拉取新消息，强制下滑
+                await loadMsgUpdate();
+                chatBox.scrollTop = chatBox.scrollHeight;
                 getOnlineCount();
             }catch(e){
                 alert("发送失败，接口未就绪");
@@ -159,10 +211,11 @@
             if(e.key === 'Enter') sendMsg();
         })
 
+        // 保持3秒刷新：只执行增量消息更新 + 在线人数更新
         setInterval(()=>{
             if(userName){
                 updateUserActive();
-                loadMsg();
+                loadMsgUpdate();
                 getOnlineCount();
             }
         },3000)
