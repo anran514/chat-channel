@@ -56,12 +56,9 @@
         const sendBtn = document.getElementById('sendBtn');
         const onlineNumEl = document.getElementById('onlineNum');
 
-        // 缓存已加载消息的最大时间戳，用来区分新消息
         let maxMsgTs = 0;
-        // 是否在底部（仅新消息到来时判断是否自动下滑）
         let isScrollBottom = true;
 
-        // 滚动监听：判断是否在看历史
         chatBox.addEventListener('scroll', () => {
             const scrollTop = chatBox.scrollTop;
             const height = chatBox.clientHeight;
@@ -107,7 +104,6 @@
             }
         }
 
-        // 在线人数单独更新，完全不碰聊天DOM
         async function getOnlineCount(){
             try {
                 const res = await fetch(`${API_BASE}/user/list`);
@@ -132,7 +128,6 @@
             }
         }
 
-        // 首次加载：渲染全部历史消息
         async function loadMsgInit(){
             try{
                 const res = await fetch(`${API_BASE}/messages`);
@@ -149,21 +144,16 @@
             }
         }
 
-        // 增量刷新：只加载比maxMsgTs新的消息，不删除原有内容
         async function loadMsgUpdate(){
             try{
                 const res = await fetch(`${API_BASE}/messages`);
                 const allList = await res.json();
-                // 筛选新增消息
                 const newMsgs = allList.filter(m => m.timestamp > maxMsgTs);
                 if(newMsgs.length === 0) return;
-
-                // 逐条追加，不清空聊天框
                 newMsgs.forEach(item=>{
                     renderSingleMsg(item);
                     if(item.timestamp > maxMsgTs) maxMsgTs = item.timestamp;
                 })
-                // 只有停在底部才自动下滑
                 if(isScrollBottom){
                     chatBox.scrollTop = chatBox.scrollHeight;
                 }
@@ -172,15 +162,19 @@
             }
         }
 
-        // 渲染单条消息（纯追加，不覆盖原有DOM）
         function renderSingleMsg(item){
             const div = document.createElement('div');
             div.className = item.username === userName ? "msg-item self" : "msg-item other";
-            div.innerHTML = `<div class="name">${item.username}</div>${item.text}`;
+            div.innerHTML = `<div class="name">${escapeHtml(item.username)}</div>${item.text}`;
             chatBox.appendChild(div);
         }
 
-        // 发送消息
+        function escapeHtml(text){
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         async function sendMsg(){
             if(!userName) return alert("先输入并确定昵称！");
             const text = msgInput.value.trim();
@@ -197,7 +191,6 @@
                     })
                 })
                 msgInput.value = "";
-                // 发完立刻拉取新消息，强制下滑
                 await loadMsgUpdate();
                 chatBox.scrollTop = chatBox.scrollHeight;
                 getOnlineCount();
@@ -211,7 +204,6 @@
             if(e.key === 'Enter') sendMsg();
         })
 
-        // 保持3秒刷新：只执行增量消息更新 + 在线人数更新
         setInterval(()=>{
             if(userName){
                 updateUserActive();
